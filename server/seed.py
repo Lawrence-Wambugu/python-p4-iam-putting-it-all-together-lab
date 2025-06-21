@@ -1,63 +1,19 @@
-#!/usr/bin/env python3
-
-from random import randint, choice as rc
-
-from faker import Faker
-
-from app import app
-from models import db, Recipe, User
-
-fake = Faker()
+from app import app, db  # import db after it's been initialized with app in app.py
+from models import User, Recipe
 
 with app.app_context():
+    db.drop_all()
+    db.create_all()
 
-    print("Deleting all records...")
-    Recipe.query.delete()
-    User.query.delete()
+    user1 = User(username='lawrence', image_url='https://example.com/image.jpg', bio='Fullstack Dev')
+    user1.password_hash = 'password123'
 
-    fake = Faker()
+    recipe1 = Recipe(
+        title='Fried Rice',
+        instructions='Boil rice until soft. In a pan, fry onions, add veggies, then mix in the rice. Cook for 5 mins.',
+        minutes_to_complete=15,
+        user=user1
+    )
 
-    print("Creating users...")
-
-    # make sure users have unique usernames
-    users = []
-    usernames = []
-
-    for i in range(20):
-        
-        username = fake.first_name()
-        while username in usernames:
-            username = fake.first_name()
-        usernames.append(username)
-
-        user = User(
-            username=username,
-            bio=fake.paragraph(nb_sentences=3),
-            image_url=fake.url(),
-        )
-
-        user.password_hash = user.username + 'password'
-
-        users.append(user)
-
-    db.session.add_all(users)
-
-    print("Creating recipes...")
-    recipes = []
-    for i in range(100):
-        instructions = fake.paragraph(nb_sentences=8)
-        
-        recipe = Recipe(
-            title=fake.sentence(),
-            instructions=instructions,
-            minutes_to_complete=randint(15,90),
-        )
-
-        recipe.user = rc(users)
-
-        recipes.append(recipe)
-
-    db.session.add_all(recipes)
-    
+    db.session.add_all([user1, recipe1])
     db.session.commit()
-    print("Complete.")
